@@ -203,6 +203,9 @@ __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputIma
 
       /* Finally, store the result in the output image */
       outputImage[(y * width + x) * 3 + k] = (unsigned char)(sum / counter);
+
+      /* Synchronize the threads after the kernel execution for this channel */
+      __syncthreads();
     }
   }
 }
