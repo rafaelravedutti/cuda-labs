@@ -1,0 +1,82 @@
+rrlmachado@vri-server:~/labs/lab1/VectorAdd$ ./run_tests 
+[Generic] 0.000333824 Importing data and creating memory on host
+Trace main::37 The input length is 16
+[GPU    ] 0.001456128 Allocating GPU memory.
+[GPU    ] 0.000067840 Copying input memory to the GPU.
+[Compute] 0.000076032 Performing CUDA computation
+[Copy   ] 0.000041984 Copying output memory to the CPU
+[GPU    ] 0.000275968 Freeing GPU Memory
+Solution is right!
+[Generic] 0.011564032 Importing data and creating memory on host
+Trace main::37 The input length is 64
+[GPU    ] 0.000784896 Allocating GPU memory.
+[GPU    ] 0.000038144 Copying input memory to the GPU.
+[Compute] 0.000044032 Performing CUDA computation
+[Copy   ] 0.000026880 Copying output memory to the CPU
+[GPU    ] 0.000175104 Freeing GPU Memory
+Solution is right!
+[Generic] 0.020329984 Importing data and creating memory on host
+Trace main::37 The input length is 93
+[GPU    ] 0.001521920 Allocating GPU memory.
+[GPU    ] 0.000070912 Copying input memory to the GPU.
+[Compute] 0.000079872 Performing CUDA computation
+[Copy   ] 0.000043008 Copying output memory to the CPU
+[GPU    ] 0.000282112 Freeing GPU Memory
+Solution is right!
+[Generic] 0.001127936 Importing data and creating memory on host
+Trace main::37 The input length is 112
+[GPU    ] 0.001528064 Allocating GPU memory.
+[GPU    ] 0.000068864 Copying input memory to the GPU.
+[Compute] 0.000078848 Performing CUDA computation
+[Copy   ] 0.000073984 Copying output memory to the CPU
+[GPU    ] 0.000305920 Freeing GPU Memory
+Solution is right!
+[Generic] 0.002702080 Importing data and creating memory on host
+Trace main::37 The input length is 1120
+[GPU    ] 0.000836864 Allocating GPU memory.
+[GPU    ] 0.000046848 Copying input memory to the GPU.
+[Compute] 0.000047104 Performing CUDA computation
+[Copy   ] 0.000028928 Copying output memory to the CPU
+[GPU    ] 0.000187904 Freeing GPU Memory
+Solution is right!
+[Generic] 0.050233856 Importing data and creating memory on host
+Trace main::37 The input length is 9921
+[GPU    ] 0.001274112 Allocating GPU memory.
+[GPU    ] 0.000130048 Copying input memory to the GPU.
+[Compute] 0.000070144 Performing CUDA computation
+[Copy   ] 0.000061952 Copying output memory to the CPU
+[GPU    ] 0.000246016 Freeing GPU Memory
+Solution is right!
+[Generic] 0.019702784 Importing data and creating memory on host
+Trace main::37 The input length is 1233
+[GPU    ] 0.001550848 Allocating GPU memory.
+[GPU    ] 0.000079104 Copying input memory to the GPU.
+[Compute] 0.000081920 Performing CUDA computation
+[Copy   ] 0.000048128 Copying output memory to the CPU
+[GPU    ] 0.000332032 Freeing GPU Memory
+Solution is right!
+[Generic] 0.004478976 Importing data and creating memory on host
+Trace main::37 The input length is 1033
+[GPU    ] 0.001478912 Allocating GPU memory.
+[GPU    ] 0.000072960 Copying input memory to the GPU.
+[Compute] 0.000076032 Performing CUDA computation
+[Copy   ] 0.000045056 Copying output memory to the CPU
+[GPU    ] 0.000278016 Freeing GPU Memory
+Solution is right!
+[Generic] 0.023297024 Importing data and creating memory on host
+Trace main::37 The input length is 4098
+[GPU    ] 0.000827904 Allocating GPU memory.
+[GPU    ] 0.000057856 Copying input memory to the GPU.
+[Compute] 0.000048896 Performing CUDA computation
+[Copy   ] 0.000037888 Copying output memory to the CPU
+[GPU    ] 0.000178176 Freeing GPU Memory
+Solution is right!
+[Generic] 0.028193024 Importing data and creating memory on host
+Trace main::37 The input length is 4018
+[GPU    ] 0.001530112 Allocating GPU memory.
+[GPU    ] 0.000097024 Copying input memory to the GPU.
+[Compute] 0.000079104 Performing CUDA computation
+[Copy   ] 0.000057088 Copying output memory to the CPU
+[GPU    ] 0.000279808 Freeing GPU Memory
+Solution is right!
+

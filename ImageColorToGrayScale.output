@@ -1,0 +1,113 @@
+rrlmachado@vri-server:~/labs/lab2/ImageColorToGrayscale$ for i in $(seq 0 9); do ./ImageColorToGrayScale -i Dataset/$i/input.ppm -o Dataset/$i/output.pbm; done
+channels:3
+channels:3
+channels:3
+channels:1
+[GPU    ] 0.002852864 Doing GPU memory allocation
+[Copy   ] 0.000186112 Copying data to the GPU
+[Compute] 0.000077056 Doing the computation on the GPU
+[Copy   ] 0.000146944 Copying data from the GPU
+[GPU    ] 0.003570944 Doing GPU Computation (memory + compute)
+channels:3
+checking against image Dataset/0/output.pbm
+Solution is correct.
+channels:3
+channels:3
+channels:3
+channels:1
+[GPU    ] 0.002861056 Doing GPU memory allocation
+[Copy   ] 0.000582912 Copying data to the GPU
+[Compute] 0.000082944 Doing the computation on the GPU
+[Copy   ] 0.000455936 Copying data from the GPU
+[GPU    ] 0.004288000 Doing GPU Computation (memory + compute)
+channels:3
+checking against image Dataset/1/output.pbm
+Solution is correct.
+channels:3
+channels:3
+channels:3
+Size of image in file Dataset/2/input.ppm does not match its header. Expecting 393216 bytes, but got 393215
+channels:3
+channels:3
+channels:3
+channels:1
+[GPU    ] 0.001499904 Doing GPU memory allocation
+[Copy   ] 0.000162048 Copying data to the GPU
+[Compute] 0.000045056 Doing the computation on the GPU
+[Copy   ] 0.000093952 Copying data from the GPU
+[GPU    ] 0.001967872 Doing GPU Computation (memory + compute)
+channels:3
+checking against image Dataset/3/output.pbm
+Solution is correct.
+channels:3
+channels:3
+channels:3
+channels:1
+[GPU    ] 0.001445120 Doing GPU memory allocation
+[Copy   ] 0.002560000 Copying data to the GPU
+[Compute] 0.000123136 Doing the computation on the GPU
+[Copy   ] 0.001559040 Copying data from the GPU
+[GPU    ] 0.006008064 Doing GPU Computation (memory + compute)
+channels:3
+checking against image Dataset/4/output.pbm
+Solution is correct.
+channels:3
+channels:3
+channels:3
+channels:1
+[GPU    ] 0.002789888 Doing GPU memory allocation
+[Copy   ] 0.001858048 Copying data to the GPU
+[Compute] 0.000128000 Doing the computation on the GPU
+[Copy   ] 0.001795072 Copying data from the GPU
+[GPU    ] 0.006856192 Doing GPU Computation (memory + compute)
+channels:3
+checking against image Dataset/5/output.pbm
+Solution is correct.
+channels:3
+channels:3
+channels:3
+channels:1
+[GPU    ] 0.002461952 Doing GPU memory allocation
+[Copy   ] 0.003358208 Copying data to the GPU
+[Compute] 0.000171776 Doing the computation on the GPU
+[Copy   ] 0.002851072 Copying data from the GPU
+[GPU    ] 0.009115904 Doing GPU Computation (memory + compute)
+channels:3
+checking against image Dataset/6/output.pbm
+Solution is correct.
+channels:3
+channels:3
+channels:3
+channels:1
+[GPU    ] 0.002827008 Doing GPU memory allocation
+[Copy   ] 0.003503872 Copying data to the GPU
+[Compute] 0.000178176 Doing the computation on the GPU
+[Copy   ] 0.003485952 Copying data from the GPU
+[GPU    ] 0.010316800 Doing GPU Computation (memory + compute)
+channels:3
+checking against image Dataset/7/output.pbm
+Solution is correct.
+channels:3
+channels:3
+channels:3
+channels:1
+[GPU    ] 0.001453056 Doing GPU memory allocation
+[Copy   ] 0.001860864 Copying data to the GPU
+[Compute] 0.000119040 Doing the computation on the GPU
+[Copy   ] 0.001686016 Copying data from the GPU
+[GPU    ] 0.005421824 Doing GPU Computation (memory + compute)
+channels:3
+checking against image Dataset/8/output.pbm
+Solution is correct.
+channels:3
+channels:3
+channels:3
+channels:1
+[GPU    ] 0.001456896 Doing GPU memory allocation
+[Copy   ] 0.000815872 Copying data to the GPU
+[Compute] 0.000091904 Doing the computation on the GPU
+[Copy   ] 0.000613120 Copying data from the GPU
+[GPU    ] 0.003281152 Doing GPU Computation (memory + compute)
+channels:3
+checking against image Dataset/9/output.pbm
+Solution is correct.
