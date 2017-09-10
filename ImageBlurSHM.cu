@@ -40,7 +40,25 @@ __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputIma
   /* Position (x,y) must be inside the image to avoid access out of the memory
      region, as thread index can't be negative, only checks for width and height */
   if(x < width && y < height) {
+    /* Indexes i, j and k */
     int i, j, k;
+
+    /* Evaluated dimensions */
+    int dim_x, dim_y;
+
+    /* Horizontal dimension */
+    if(width % BLOCK_DIM_X != 0 && blockIdx.x == gridDim.x - 1) {
+      dim_x = width % BLOCK_DIM_X;
+    } else {
+      dim_x = BLOCK_DIM_X;
+    }
+
+    /* Vertical dimension */
+    if(height % BLOCK_DIM_Y != 0 && blockIdx.y == gridDim.y - 1) {
+      dim_y = height % BLOCK_DIM_Y;
+    } else {
+      dim_y = BLOCK_DIM_Y;
+    }
 
     /* The images have 3 channels (R, G and B), for each channel execute the
        blur procedure */
@@ -78,13 +96,13 @@ __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputIma
         }
 
         /* The x axis for the right region */
-        x_dest = threadIdx.x + BLUR_SIZE + BLOCK_DIM_X;
-        /* The position at the image data is (x+BLOCK_DIM_X,y) */
-        idx_src = (y * width + x + BLOCK_DIM_X) * 3 + k;
+        x_dest = threadIdx.x + BLUR_SIZE + dim_x;
+        /* The position at the image data is (x+dim_x,y) */
+        idx_src = (y * width + x + dim_x) * 3 + k;
 
         /* Check if the position is valid and if so, performs the copy, otherwise
            just mark this position as invalid in the mask */
-        if(x + BLOCK_DIM_X < width) {
+        if(x + dim_x < width) {
           ds_mask[x_dest][y_dest] = 1;
           ds_img[x_dest][y_dest] = inputImage[idx_src];
         } else {
@@ -113,13 +131,13 @@ __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputIma
         }
 
         /* The y axis for the bottom region */
-        y_dest = threadIdx.y + BLUR_SIZE + BLOCK_DIM_Y;
-        /* The position at the image data is (x,y+BLOCK_DIM_Y) */
-        idx_src = ((y + BLOCK_DIM_Y) * width + x) * 3 + k;
+        y_dest = threadIdx.y + BLUR_SIZE + dim_y;
+        /* The position at the image data is (x,y+dim_y) */
+        idx_src = ((y + dim_y) * width + x) * 3 + k;
 
         /* Check if the position is valid and if so, performs the copy, otherwise
            just mark this position as invalid in the mask */
-        if(y + BLOCK_DIM_Y < height) {
+        if(y + dim_y < height) {
           ds_mask[x_dest][y_dest] = 1;
           ds_img[x_dest][y_dest] = inputImage[idx_src];
         } else {
@@ -145,13 +163,13 @@ __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputIma
         }
 
         /* Upper-right corner indexes */
-        x_dest = threadIdx.x + BLUR_SIZE + BLOCK_DIM_X;
+        x_dest = threadIdx.x + BLUR_SIZE + dim_x;
         y_dest = threadIdx.y;
-        idx_src = ((y - BLUR_SIZE) * width + x + BLOCK_DIM_X) * 3 + k;
+        idx_src = ((y - BLUR_SIZE) * width + x + dim_x) * 3 + k;
 
         /* Check if the position is valid and if so, performs the copy, otherwise
            just mark this position as invalid in the mask */
-        if(x + BLOCK_DIM_X < width && y - BLUR_SIZE > -1) {
+        if(x + dim_x < width && y - BLUR_SIZE > -1) {
           ds_mask[x_dest][y_dest] = 1;
           ds_img[x_dest][y_dest] = inputImage[idx_src];
         } else {
@@ -160,12 +178,12 @@ __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputIma
 
         /* Bottom-left corner indexes */
         x_dest = threadIdx.x;
-        y_dest = threadIdx.y + BLUR_SIZE + BLOCK_DIM_Y;
-        idx_src = ((y + BLOCK_DIM_Y) * width + x - BLUR_SIZE) * 3 + k;
+        y_dest = threadIdx.y + BLUR_SIZE + dim_y;
+        idx_src = ((y + dim_y) * width + x - BLUR_SIZE) * 3 + k;
 
         /* Check if the position is valid and if so, performs the copy, otherwise
            just mark this position as invalid in the mask */
-        if(x - BLUR_SIZE > -1 && y + BLOCK_DIM_Y < height) {
+        if(x - BLUR_SIZE > -1 && y + dim_y < height) {
           ds_mask[x_dest][y_dest] = 1;
           ds_img[x_dest][y_dest] = inputImage[idx_src];
         } else {
@@ -173,13 +191,13 @@ __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputIma
         }
 
         /* Bottom-right corner indexes */
-        x_dest = threadIdx.x + BLUR_SIZE + BLOCK_DIM_X;
-        y_dest = threadIdx.y + BLUR_SIZE + BLOCK_DIM_Y;
-        idx_src = ((y + BLOCK_DIM_Y) * width + x + BLOCK_DIM_X) * 3 + k;
+        x_dest = threadIdx.x + BLUR_SIZE + dim_x;
+        y_dest = threadIdx.y + BLUR_SIZE + dim_y;
+        idx_src = ((y + dim_y) * width + x + dim_x) * 3 + k;
 
         /* Check if the position is valid and if so, performs the copy, otherwise
            just mark this position as invalid in the mask */
-        if(x + BLOCK_DIM_X < width && y + BLOCK_DIM_Y < height) {
+        if(x + dim_x < width && y + dim_y < height) {
           ds_mask[x_dest][y_dest] = 1;
           ds_img[x_dest][y_dest] = inputImage[idx_src];
         } else {
