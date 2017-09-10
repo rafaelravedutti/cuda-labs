@@ -159,7 +159,6 @@ __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputIma
         }
 
         /* Bottom-left corner indexes */
-        x_dest = threadIdx.x + BLUR_SIZE + BLOCK_DIM_X;
         x_dest = threadIdx.x;
         y_dest = threadIdx.y + BLUR_SIZE + BLOCK_DIM_Y;
         idx_src = ((y + BLOCK_DIM_Y) * width + x - BLUR_SIZE) * 3 + k;
