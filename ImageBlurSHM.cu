@@ -18,8 +18,8 @@
 #define BLUR_SIZE     5
 
 /* Block dimensions */
-#define BLOCK_DIM_X   16
-#define BLOCK_DIM_Y   16
+#define BLOCK_DIM_X   32
+#define BLOCK_DIM_Y   32
 
 __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputImage, int width, int height) {
   /* Shared memory area for image data */
@@ -37,178 +37,182 @@ __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputIma
   /* Registers used for indexes calculation */
   int x_dest, y_dest, idx_src;
 
-  /* Position (x,y) must be inside the image to avoid access out of the memory
-     region, as thread index can't be negative, only checks for width and height */
-  if(x < width && y < height) {
-    /* Indexes i, j and k */
-    int i, j, k;
+  /* Indexes i, j and k */
+  int i, j, k;
 
-    /* Evaluated dimensions */
-    int dim_x, dim_y;
+  /* Evaluated dimensions */
+  int dim_x, dim_y;
 
-    /* Horizontal dimension */
-    if(width % BLOCK_DIM_X != 0 && blockIdx.x == gridDim.x - 1) {
-      dim_x = width % BLOCK_DIM_X;
-    } else {
-      dim_x = BLOCK_DIM_X;
-    }
+  /* Horizontal dimension */
+  if(width % BLOCK_DIM_X != 0 && blockIdx.x == gridDim.x - 1) {
+    dim_x = width % BLOCK_DIM_X;
+  } else {
+    dim_x = BLOCK_DIM_X;
+  }
 
-    /* Vertical dimension */
-    if(height % BLOCK_DIM_Y != 0 && blockIdx.y == gridDim.y - 1) {
-      dim_y = height % BLOCK_DIM_Y;
-    } else {
-      dim_y = BLOCK_DIM_Y;
-    }
+  /* Vertical dimension */
+  if(height % BLOCK_DIM_Y != 0 && blockIdx.y == gridDim.y - 1) {
+    dim_y = height % BLOCK_DIM_Y;
+  } else {
+    dim_y = BLOCK_DIM_Y;
+  }
 
-    /* The images have 3 channels (R, G and B), for each channel execute the
-       blur procedure */
-    for(k = 0; k < 3; ++k) {
-      /* Sum is used as accumulator for neighbor pixels */
-      int sum = 0;
-      /* Counter is the number of valid neighbor pixels to get the average */
-      int counter = 0;
+  /* The images have 3 channels (R, G and B), for each channel execute the
+     blur procedure */
+  for(k = 0; k < 3; ++k) {
+    /* Sum is used as accumulator for neighbor pixels */
+    int sum = 0;
+    /* Counter is the number of valid neighbor pixels to get the average */
+    int counter = 0;
 
+    /* Position (x,y) must be inside the image to avoid out of the memory access,
+       as thread index can't be negative, only check for width and height */
+    if(x < width && y < height) {
       /* At start, copy into the shared memory the region of the image that is
          in the block region, no need for boundary checking in this copy, all
          the image data is copied in the shared memory after the sentinel region */
       ds_mask[threadIdx.x + BLUR_SIZE][threadIdx.y + BLUR_SIZE] = 1;
       ds_img[threadIdx.x + BLUR_SIZE][threadIdx.y + BLUR_SIZE] = \
         inputImage[(y * width + x) * 3 + k];
+    }
 
-      /* If the thread x axis is lower than the blur size, use the thread to
-         copy the left center and right center regions of the sentinel */
-      if(threadIdx.x < BLUR_SIZE) {
-        /* The y axis in the shared memory is the same in both regions */
-        y_dest = threadIdx.y + BLUR_SIZE;
+    /* If the thread x axis is lower than the blur size, use the thread to
+       copy the left center and right center regions of the sentinel */
+    if(threadIdx.x < BLUR_SIZE) {
+      /* The y axis in the shared memory is the same in both regions */
+      y_dest = threadIdx.y + BLUR_SIZE;
 
-        /* The x axis for the left region */
-        x_dest = threadIdx.x;
-        /* The position at the image data is (x-BLUR_SIZE,y) */
-        idx_src = (y * width + x - BLUR_SIZE) * 3 + k;
+      /* The x axis for the left region */
+      x_dest = threadIdx.x;
+      /* The position at the image data is (x-BLUR_SIZE,y) */
+      idx_src = (y * width + x - BLUR_SIZE) * 3 + k;
 
-        /* Check if the position is valid and if so, performs the copy, otherwise
-           just mark this position as invalid in the mask */
-        if(x - BLUR_SIZE > -1) {
-          ds_mask[x_dest][y_dest] = 1;
-          ds_img[x_dest][y_dest] = inputImage[idx_src];
-        } else {
-          ds_mask[x_dest][y_dest] = 0;
-        }
-
-        /* The x axis for the right region */
-        x_dest = threadIdx.x + BLUR_SIZE + dim_x;
-        /* The position at the image data is (x+dim_x,y) */
-        idx_src = (y * width + x + dim_x) * 3 + k;
-
-        /* Check if the position is valid and if so, performs the copy, otherwise
-           just mark this position as invalid in the mask */
-        if(x + dim_x < width) {
-          ds_mask[x_dest][y_dest] = 1;
-          ds_img[x_dest][y_dest] = inputImage[idx_src];
-        } else {
-          ds_mask[x_dest][y_dest] = 0;
-        }
+      /* Check if the position is valid and if so, performs the copy, otherwise
+         just mark this position as invalid in the mask */
+      if(x - BLUR_SIZE > -1) {
+        ds_mask[x_dest][y_dest] = 1;
+        ds_img[x_dest][y_dest] = inputImage[idx_src];
+      } else {
+        ds_mask[x_dest][y_dest] = 0;
       }
 
-      /* If the thread y axis is lower than the blur size, use the thread to
-         copy the center top and center bottom regions of the sentinel */
-      if(threadIdx.y < BLUR_SIZE) {
-        /* The x axis in the shared memory is the same in both regions */
-        x_dest = threadIdx.x + BLUR_SIZE;
+      /* The x axis for the right region */
+      x_dest = threadIdx.x + BLUR_SIZE + dim_x;
+      /* The position at the image data is (x+dim_x,y) */
+      idx_src = (y * width + x + dim_x) * 3 + k;
 
-        /* The y axis for the top region */
-        y_dest = threadIdx.y;
-        /* The position at the image data is (x,y-BLUR_SIZE) */
-        idx_src = ((y - BLUR_SIZE) * width + x) * 3 + k;
+      /* Check if the position is valid and if so, performs the copy, otherwise
+         just mark this position as invalid in the mask */
+      if(x + dim_x < width) {
+        ds_mask[x_dest][y_dest] = 1;
+        ds_img[x_dest][y_dest] = inputImage[idx_src];
+      } else {
+        ds_mask[x_dest][y_dest] = 0;
+      }
+    }
 
-        /* Check if the position is valid and if so, performs the copy, otherwise
-           just mark this position as invalid in the mask */
-        if(y - BLUR_SIZE > -1) {
-          ds_mask[x_dest][y_dest] = 1;
-          ds_img[x_dest][y_dest] = inputImage[idx_src];
-        } else {
-          ds_mask[x_dest][y_dest] = 0;
-        }
+    /* If the thread y axis is lower than the blur size, use the thread to
+       copy the center top and center bottom regions of the sentinel */
+    if(threadIdx.y < BLUR_SIZE) {
+      /* The x axis in the shared memory is the same in both regions */
+      x_dest = threadIdx.x + BLUR_SIZE;
 
-        /* The y axis for the bottom region */
-        y_dest = threadIdx.y + BLUR_SIZE + dim_y;
-        /* The position at the image data is (x,y+dim_y) */
-        idx_src = ((y + dim_y) * width + x) * 3 + k;
+      /* The y axis for the top region */
+      y_dest = threadIdx.y;
+      /* The position at the image data is (x,y-BLUR_SIZE) */
+      idx_src = ((y - BLUR_SIZE) * width + x) * 3 + k;
 
-        /* Check if the position is valid and if so, performs the copy, otherwise
-           just mark this position as invalid in the mask */
-        if(y + dim_y < height) {
-          ds_mask[x_dest][y_dest] = 1;
-          ds_img[x_dest][y_dest] = inputImage[idx_src];
-        } else {
-          ds_mask[x_dest][y_dest] = 0;
-        }
+      /* Check if the position is valid and if so, performs the copy, otherwise
+         just mark this position as invalid in the mask */
+      if(y - BLUR_SIZE > -1) {
+        ds_mask[x_dest][y_dest] = 1;
+        ds_img[x_dest][y_dest] = inputImage[idx_src];
+      } else {
+        ds_mask[x_dest][y_dest] = 0;
       }
 
-      /* Use the first threads of size BLUR_SIZExBLUR_SIZE to copy the corners
-         content of the image and fill the remaining space in the shared memory */
-      if(threadIdx.x < BLUR_SIZE && threadIdx.y < BLUR_SIZE) {
-        /* Upper-left corner indexes */
-        x_dest = threadIdx.x;
-        y_dest = threadIdx.y;
-        idx_src = ((y - BLUR_SIZE) * width + x - BLUR_SIZE) * 3 + k;
+      /* The y axis for the bottom region */
+      y_dest = threadIdx.y + BLUR_SIZE + dim_y;
+      /* The position at the image data is (x,y+dim_y) */
+      idx_src = ((y + dim_y) * width + x) * 3 + k;
 
-        /* Check if the position is valid and if so, performs the copy, otherwise
-           just mark this position as invalid in the mask */
-        if(x - BLUR_SIZE > -1 && y - BLUR_SIZE > -1) {
-          ds_mask[x_dest][y_dest] = 1;
-          ds_img[x_dest][y_dest] = inputImage[idx_src];
-        } else {
-          ds_mask[x_dest][y_dest] = 0;
-        }
+      /* Check if the position is valid and if so, performs the copy, otherwise
+         just mark this position as invalid in the mask */
+      if(y + dim_y < height) {
+        ds_mask[x_dest][y_dest] = 1;
+        ds_img[x_dest][y_dest] = inputImage[idx_src];
+      } else {
+        ds_mask[x_dest][y_dest] = 0;
+      }
+    }
 
-        /* Upper-right corner indexes */
-        x_dest = threadIdx.x + BLUR_SIZE + dim_x;
-        y_dest = threadIdx.y;
-        idx_src = ((y - BLUR_SIZE) * width + x + dim_x) * 3 + k;
+    /* Use the first threads of size BLUR_SIZExBLUR_SIZE to copy the corners
+       content of the image and fill the remaining space in the shared memory */
+    if(threadIdx.x < BLUR_SIZE && threadIdx.y < BLUR_SIZE) {
+      /* Upper-left corner indexes */
+      x_dest = threadIdx.x;
+      y_dest = threadIdx.y;
+      idx_src = ((y - BLUR_SIZE) * width + x - BLUR_SIZE) * 3 + k;
 
-        /* Check if the position is valid and if so, performs the copy, otherwise
-           just mark this position as invalid in the mask */
-        if(x + dim_x < width && y - BLUR_SIZE > -1) {
-          ds_mask[x_dest][y_dest] = 1;
-          ds_img[x_dest][y_dest] = inputImage[idx_src];
-        } else {
-          ds_mask[x_dest][y_dest] = 0;
-        }
-
-        /* Bottom-left corner indexes */
-        x_dest = threadIdx.x;
-        y_dest = threadIdx.y + BLUR_SIZE + dim_y;
-        idx_src = ((y + dim_y) * width + x - BLUR_SIZE) * 3 + k;
-
-        /* Check if the position is valid and if so, performs the copy, otherwise
-           just mark this position as invalid in the mask */
-        if(x - BLUR_SIZE > -1 && y + dim_y < height) {
-          ds_mask[x_dest][y_dest] = 1;
-          ds_img[x_dest][y_dest] = inputImage[idx_src];
-        } else {
-          ds_mask[x_dest][y_dest] = 0;
-        }
-
-        /* Bottom-right corner indexes */
-        x_dest = threadIdx.x + BLUR_SIZE + dim_x;
-        y_dest = threadIdx.y + BLUR_SIZE + dim_y;
-        idx_src = ((y + dim_y) * width + x + dim_x) * 3 + k;
-
-        /* Check if the position is valid and if so, performs the copy, otherwise
-           just mark this position as invalid in the mask */
-        if(x + dim_x < width && y + dim_y < height) {
-          ds_mask[x_dest][y_dest] = 1;
-          ds_img[x_dest][y_dest] = inputImage[idx_src];
-        } else {
-          ds_mask[x_dest][y_dest] = 0;
-        }
+      /* Check if the position is valid and if so, performs the copy, otherwise
+         just mark this position as invalid in the mask */
+      if(x - BLUR_SIZE > -1 && y - BLUR_SIZE > -1) {
+        ds_mask[x_dest][y_dest] = 1;
+        ds_img[x_dest][y_dest] = inputImage[idx_src];
+      } else {
+        ds_mask[x_dest][y_dest] = 0;
       }
 
-      /* Synchronize the threads as the next step can cause race conditions if
-         not all the content is copied into the shared memory */
-      __syncthreads();
+      /* Upper-right corner indexes */
+      x_dest = threadIdx.x + BLUR_SIZE + dim_x;
+      y_dest = threadIdx.y;
+      idx_src = ((y - BLUR_SIZE) * width + x + dim_x) * 3 + k;
 
+      /* Check if the position is valid and if so, performs the copy, otherwise
+         just mark this position as invalid in the mask */
+      if(x + dim_x < width && y - BLUR_SIZE > -1) {
+        ds_mask[x_dest][y_dest] = 1;
+        ds_img[x_dest][y_dest] = inputImage[idx_src];
+      } else {
+        ds_mask[x_dest][y_dest] = 0;
+      }
+
+      /* Bottom-left corner indexes */
+      x_dest = threadIdx.x;
+      y_dest = threadIdx.y + BLUR_SIZE + dim_y;
+      idx_src = ((y + dim_y) * width + x - BLUR_SIZE) * 3 + k;
+
+      /* Check if the position is valid and if so, performs the copy, otherwise
+         just mark this position as invalid in the mask */
+      if(x - BLUR_SIZE > -1 && y + dim_y < height) {
+        ds_mask[x_dest][y_dest] = 1;
+        ds_img[x_dest][y_dest] = inputImage[idx_src];
+      } else {
+        ds_mask[x_dest][y_dest] = 0;
+      }
+
+      /* Bottom-right corner indexes */
+      x_dest = threadIdx.x + BLUR_SIZE + dim_x;
+      y_dest = threadIdx.y + BLUR_SIZE + dim_y;
+      idx_src = ((y + dim_y) * width + x + dim_x) * 3 + k;
+
+      /* Check if the position is valid and if so, performs the copy, otherwise
+         just mark this position as invalid in the mask */
+      if(x + dim_x < width && y + dim_y < height) {
+        ds_mask[x_dest][y_dest] = 1;
+        ds_img[x_dest][y_dest] = inputImage[idx_src];
+      } else {
+        ds_mask[x_dest][y_dest] = 0;
+      }
+    }
+
+    /* Synchronize the threads as the next step can cause race conditions if
+       not all the content is copied into the shared memory */
+    __syncthreads();
+
+    /* Position (x,y) must be inside the image to avoid out of the memory access,
+       as thread index can't be negative, only check for width and height */
+    if(x < width && y < height) {
       /* Go through each point in the image to calculate the average, this time
          using the shared memory content */
       for(i = threadIdx.x; i <= threadIdx.x + (BLUR_SIZE * 2); ++i) {
@@ -220,10 +224,10 @@ __global__ void blurImageShm(unsigned char *inputImage, unsigned char *outputIma
 
       /* Finally, store the result in the output image */
       outputImage[(y * width + x) * 3 + k] = (unsigned char)(sum / counter);
-
-      /* Synchronize the threads after the kernel execution for this channel */
-      __syncthreads();
     }
+
+    /* Synchronize the threads after the kernel execution for this channel */
+    __syncthreads();
   }
 }
 
