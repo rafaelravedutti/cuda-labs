@@ -3,8 +3,7 @@
 //#include <wb.h>
 //#include "/home/prof/wagner/ci853/labs/wb4.h" // use our lib instead (under construction)
 //#include "/home/wagner/ci853/labs-achel/wb.h" // use our lib instead (under construction)
-//#include "/home/rrlmachado/labs/wb4.h" // use our lib instead (under construction)
-#include "/home/rafael/repositories/cuda-labs/labs/wb4.h"
+#include "/home/rrlmachado/labs/wb4.h" // use our lib instead (under construction)
 
 #define wbCheck(stmt)                                                     \
   do {                                                                    \
@@ -27,13 +26,21 @@
 
 __global__ void rgb2uintKernelSHM(unsigned int *argb, unsigned char *rgb, int size) {
   __shared__ unsigned int ds_uint[CONV_BLOCK_DIM];
-  __shared__ unsigned int ds_rgb[CONV_BLOCK_DIM];
+  __shared__ unsigned char ds_rgb[CONV_BLOCK_DIM * 3];
 
   int x = blockIdx.x * blockDim.x + threadIdx.x;
 
+  int tpos = threadIdx.x * 3;
+  int xpos = x * 3;
+
   if(x < size) {
-    ds_rgb[threadIdx.x] = *((unsigned int *) &rgb[x * 3]);
-    ds_uint[threadIdx.x] = ds_rgb[threadIdx.x] >> 8;
+    ds_rgb[tpos] = rgb[xpos];
+    ds_rgb[tpos + 1] = rgb[xpos + 1];
+    ds_rgb[tpos + 2] = rgb[xpos + 2];
+
+    ds_uint[threadIdx.x] =  (ds_rgb[tpos] << 16) +
+                            (ds_rgb[tpos + 1] << 8) +
+                            ds_rgb[tpos + 2];
 
     __syncthreads();
 
@@ -47,17 +54,21 @@ __global__ void uint2rgbKernelSHM(unsigned int *argb, unsigned char *rgb, int si
 
   int x = blockIdx.x * blockDim.x + threadIdx.x;
 
+  int tpos = threadIdx.x * 3;
+  int xpos = x * 3;
+
   if(x < size) {
     ds_uint[threadIdx.x] = argb[x];
-    ds_rgb[threadIdx.x + 0] = (ds_uint[threadIdx.x] >> 16) & 0xFF;
-    ds_rgb[threadIdx.x + 1] = (ds_uint[threadIdx.x] >> 8) & 0xFF;
-    ds_rgb[threadIdx.x + 2] = ds_uint[threadIdx.x] & 0xFF;
+
+    ds_rgb[tpos] = (ds_uint[threadIdx.x] >> 16) & 0xFF;
+    ds_rgb[tpos + 1] = (ds_uint[threadIdx.x] >> 8) & 0xFF;
+    ds_rgb[tpos + 2] = ds_uint[threadIdx.x] & 0xFF;
 
     __syncthreads();
 
-    rgb[x] = ds_rgb[threadIdx.x];
-    rgb[x + 1] = ds_rgb[threadIdx.x + 1];
-    rgb[x + 2] = ds_rgb[threadIdx.x + 2];
+    rgb[xpos] = ds_rgb[tpos];
+    rgb[xpos + 1] = ds_rgb[tpos + 1];
+    rgb[xpos + 2] = ds_rgb[tpos + 2];
   }
 }
 
@@ -98,9 +109,11 @@ __global__ void blurImageShm(unsigned int *inputImage, unsigned int *outputImage
   }
 
   /* Sum is used as accumulator for neighbor pixels */
-  int sum = 0;
+  unsigned int sum = 0;
+  // unsigned int sumR = 0, sumG = 0, sumB = 0;
+
   /* Counter is the number of valid neighbor pixels to get the average */
-  int counter = 0;
+  unsigned int counter = 0;
 
   /* Position (x,y) must be inside the image to avoid out of the memory access,
      as thread index can't be negative, only check for width and height */
@@ -260,7 +273,7 @@ __global__ void blurImageShm(unsigned int *inputImage, unsigned int *outputImage
     }
 
     /* Finally, store the result in the output image */
-    outputImage[y * width + x] = (unsigned char)(sum / counter);
+    outputImage[y * width + x] = sum / counter;
   }
 }
 
@@ -322,7 +335,7 @@ int main(int argc, char *argv[]) {
   wbTime_start(Compute, "Converting image data to ARGB");
 
   rgb2uintKernelSHM<<<(imageVectorSize - 1) / CONV_BLOCK_DIM + 1, CONV_BLOCK_DIM>>>(
-    deviceInputImageDataARGB, deviceInputImageDataRGB, imageWidth * imageHeight
+    deviceInputImageDataARGB, deviceInputImageDataRGB, imageVectorSize
   );
 
   wbTime_stop(Compute, "Converting image data to ARGB");
@@ -346,7 +359,7 @@ int main(int argc, char *argv[]) {
   wbTime_start(Compute, "Converting image data to RGB");
 
   uint2rgbKernelSHM<<<(imageVectorSize - 1) / CONV_BLOCK_DIM + 1, CONV_BLOCK_DIM>>>(
-    deviceOutputImageDataARGB, deviceOutputImageDataRGB, imageWidth * imageHeight
+    deviceOutputImageDataARGB, deviceOutputImageDataRGB, imageVectorSize
   );
 
   wbTime_stop(Compute, "Converting image data to RGB");
