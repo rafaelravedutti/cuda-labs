@@ -3,7 +3,8 @@
 //#include <wb.h>
 //#include "/home/prof/wagner/ci853/labs/wb4.h" // use our lib instead (under construction)
 //#include "/home/wagner/ci853/labs-achel/wb.h" // use our lib instead (under construction)
-#include "/home/rrlmachado/labs/wb4.h" // use our lib instead (under construction)
+//#include "/home/rrlmachado/labs/wb4.h" // use our lib instead (under construction)
+#include "/home/rafael/repositories/cuda-labs/labs/wb4.h"
 
 #define wbCheck(stmt)                                                     \
   do {                                                                    \
@@ -25,11 +26,9 @@
 #define CONV_BLOCK_DIM  128
 
 __global__ void rgb2uintKernelSHM(unsigned int *argb, unsigned char *rgb, int size) {
-  __shared__ unsigned int ds_uint[CONV_BLOCK_DIM];
-  __shared__ unsigned char ds_rgb[CONV_BLOCK_DIM * 3];
+  __shared__ unsigned int ds_rgb[CONV_BLOCK_DIM * 3];
 
   int x = blockIdx.x * blockDim.x + threadIdx.x;
-
   int tpos = threadIdx.x * 3;
   int xpos = x * 3;
 
@@ -38,37 +37,31 @@ __global__ void rgb2uintKernelSHM(unsigned int *argb, unsigned char *rgb, int si
     ds_rgb[tpos + 1] = rgb[xpos + 1];
     ds_rgb[tpos + 2] = rgb[xpos + 2];
 
-    ds_uint[threadIdx.x] =  (ds_rgb[tpos] << 16) +
-                            (ds_rgb[tpos + 1] << 8) +
-                            ds_rgb[tpos + 2];
+    argb[x] = (ds_rgb[tpos] << 16) +
+              (ds_rgb[tpos + 1] << 8) +
+              ds_rgb[tpos + 2];
 
-    __syncthreads();
-
-    argb[x] = ds_uint[threadIdx.x];
+    //argb[x] = ((rgb[x * 3] & 0xFF) << 16) | ((rgb[x * 3 + 1] & 0xFF) << 8) | (rgb[x * 3 + 2] & 0xFF);
   }
 }
 
 __global__ void uint2rgbKernelSHM(unsigned int *argb, unsigned char *rgb, int size) {
   __shared__ unsigned int ds_uint[CONV_BLOCK_DIM];
-  __shared__ unsigned char ds_rgb[CONV_BLOCK_DIM * 3];
 
   int x = blockIdx.x * blockDim.x + threadIdx.x;
-
-  int tpos = threadIdx.x * 3;
   int xpos = x * 3;
 
   if(x < size) {
     ds_uint[threadIdx.x] = argb[x];
 
-    ds_rgb[tpos] = (ds_uint[threadIdx.x] >> 16) & 0xFF;
-    ds_rgb[tpos + 1] = (ds_uint[threadIdx.x] >> 8) & 0xFF;
-    ds_rgb[tpos + 2] = ds_uint[threadIdx.x] & 0xFF;
-
-    __syncthreads();
-
-    rgb[xpos] = ds_rgb[tpos];
-    rgb[xpos + 1] = ds_rgb[tpos + 1];
-    rgb[xpos + 2] = ds_rgb[tpos + 2];
+    rgb[xpos] = (ds_uint[threadIdx.x] >> 16) & 0xFF;
+    rgb[xpos + 1] = (ds_uint[threadIdx.x] >> 8) & 0xFF;
+    rgb[xpos + 2] = ds_uint[threadIdx.x] & 0xFF;
+/*
+    rgb[x * 3] = (argb[x] >> 16) & 0xFF;
+    rgb[x * 3 + 1] = (argb[x] >> 8) & 0xFF;
+    rgb[x * 3 + 2] = argb[x] & 0xFF;
+*/
   }
 }
 
@@ -80,6 +73,12 @@ __global__ void blurImageShm(unsigned int *inputImage, unsigned int *outputImage
   /* Shared memory area for mask */
   __shared__ unsigned int
     ds_mask[BLOCK_DIM_X + BLUR_SIZE * 2][BLOCK_DIM_Y + BLUR_SIZE * 2];
+
+  /* Sum is used as accumulator for neighbor pixels */
+  unsigned int sumR = 0, sumG = 0, sumB = 0;
+
+  /* Counter is the number of valid neighbor pixels to get the average */
+  unsigned int counter = 0;
 
   /* Coordinates (x,y) in relation to entire image */
   int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -107,13 +106,6 @@ __global__ void blurImageShm(unsigned int *inputImage, unsigned int *outputImage
   } else {
     dim_y = BLOCK_DIM_Y;
   }
-
-  /* Sum is used as accumulator for neighbor pixels */
-  unsigned int sum = 0;
-  // unsigned int sumR = 0, sumG = 0, sumB = 0;
-
-  /* Counter is the number of valid neighbor pixels to get the average */
-  unsigned int counter = 0;
 
   /* Position (x,y) must be inside the image to avoid out of the memory access,
      as thread index can't be negative, only check for width and height */
@@ -267,13 +259,20 @@ __global__ void blurImageShm(unsigned int *inputImage, unsigned int *outputImage
        using the shared memory content */
     for(i = threadIdx.x; i <= threadIdx.x + (BLUR_SIZE * 2); ++i) {
       for(j = threadIdx.y; j <= threadIdx.y + (BLUR_SIZE * 2); ++j) {
-          sum += ds_img[i][j] * ds_mask[i][j];
+          sumR += ((ds_img[i][j] >> 16) & 0xFF) * ds_mask[i][j];
+          sumG += ((ds_img[i][j] >> 8) & 0xFF) * ds_mask[i][j];
+          sumB += (ds_img[i][j] & 0xFF) * ds_mask[i][j];
           counter += ds_mask[i][j];
       }
     }
 
+    /* Divide each channel by the number of pixels obtained to get the average */
+    sumR /= counter;
+    sumG /= counter;
+    sumB /= counter;
+
     /* Finally, store the result in the output image */
-    outputImage[y * width + x] = sum / counter;
+    outputImage[y * width + x] = (sumR << 16) + (sumG << 8) + sumB;
   }
 }
 
