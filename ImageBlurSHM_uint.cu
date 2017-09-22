@@ -40,8 +40,6 @@ __global__ void rgb2uintKernelSHM(unsigned int *argb, unsigned char *rgb, int si
     argb[x] = (ds_rgb[tpos] << 16) +
               (ds_rgb[tpos + 1] << 8) +
               ds_rgb[tpos + 2];
-
-    //argb[x] = ((rgb[x * 3] & 0xFF) << 16) | ((rgb[x * 3 + 1] & 0xFF) << 8) | (rgb[x * 3 + 2] & 0xFF);
   }
 }
 
@@ -57,11 +55,6 @@ __global__ void uint2rgbKernelSHM(unsigned int *argb, unsigned char *rgb, int si
     rgb[xpos] = (ds_uint[threadIdx.x] >> 16) & 0xFF;
     rgb[xpos + 1] = (ds_uint[threadIdx.x] >> 8) & 0xFF;
     rgb[xpos + 2] = ds_uint[threadIdx.x] & 0xFF;
-/*
-    rgb[x * 3] = (argb[x] >> 16) & 0xFF;
-    rgb[x * 3 + 1] = (argb[x] >> 8) & 0xFF;
-    rgb[x * 3 + 2] = argb[x] & 0xFF;
-*/
   }
 }
 
